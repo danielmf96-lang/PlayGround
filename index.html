@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#02101a" />
+  <title>DECOMP — Deep Salvage</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene" aria-label="Deep sea dive scene"></canvas>
+    <div id="bendsVignette"></div>
+    <div id="flash"></div>
+
+    <!-- ============ HUD ============ -->
+    <div id="hud" class="hud hidden">
+      <div class="hud-top">
+        <div class="depth-panel">
+          <div class="depth-line"><span id="depthVal">000</span><span class="depth-unit">M</span></div>
+          <div class="depth-meta"><span id="pressureVal">1.0 ATM</span><span class="dot">•</span><span id="timeVal">00:00</span></div>
+        </div>
+
+        <div class="contract-panel">
+          <div class="contract-row">
+            <span class="eyebrow" id="contractCode">CONTRACT 01</span>
+            <span class="contract-name" id="contractName">KELP SHELF</span>
+          </div>
+          <div class="quota-row">
+            <div class="quota-track"><div class="quota-fill" id="quotaFill"></div></div>
+            <span class="quota-text" id="quotaText">$0 / $700</span>
+          </div>
+          <div class="objective-row" id="objectiveRow">RECOVER SALVAGE</div>
+        </div>
+
+        <div class="top-right">
+          <div class="cash-panel"><span class="eyebrow">BANKED</span><span class="cash-val" id="cashVal">$0</span></div>
+          <button class="icon-btn" id="pauseBtn" aria-label="Pause">II</button>
+          <button class="icon-btn" id="muteBtn" aria-label="Mute">♪</button>
+        </div>
+      </div>
+
+      <div class="gauge-panel">
+        <div class="gauge air-gauge" id="airGauge">
+          <div class="gauge-head"><span class="eyebrow">AIR</span><span class="gauge-num" id="airVal">100</span></div>
+          <div class="bar"><div class="bar-fill" id="airFill"></div><div class="bar-ticks"></div></div>
+        </div>
+        <div class="gauge n2-gauge" id="n2Gauge">
+          <div class="gauge-head"><span class="eyebrow">N₂ LOAD</span><span class="gauge-num" id="n2Val">0%</span></div>
+          <div class="bar"><div class="bar-fill" id="n2Fill"></div><div class="bar-ticks"></div></div>
+          <div class="gauge-sub" id="ceilingVal">CEILING 0 M</div>
+        </div>
+        <div class="deco-state" id="decoState">SAFE TO ASCEND</div>
+      </div>
+
+      <div class="warnings" id="warnings"></div>
+      <div class="toast-zone" id="toastZone"></div>
+
+      <div class="surface-prompt hidden" id="surfacePrompt">
+        <div class="surface-prompt-inner">
+          <span id="surfacePromptText">QUOTA MET — SURFACE TO END DIVE</span>
+          <button id="surfaceBtn">SURFACE</button>
+        </div>
+      </div>
+
+      <div class="hint-bar" id="hintBar">
+        <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span>
+        <span class="hint-txt">SWIM</span>
+        <span class="key wide">SPACE</span><span class="hint-txt">BOOST</span>
+        <span class="key wide">ESC</span><span class="hint-txt">PAUSE</span>
+      </div>
+
+      <div id="touchControls" class="touch-controls hidden">
+        <div id="stickBase" class="stick-base"><div id="stickKnob" class="stick-knob"></div></div>
+        <button id="boostBtn" class="boost-btn" aria-label="Boost">BOOST</button>
+      </div>
+    </div>
+
+    <!-- ============ TITLE ============ -->
+    <section class="screen title-screen" id="titleScreen">
+      <div class="title-wrap">
+        <div class="kicker"><span class="live-dot"></span> DEEP SALVAGE DIVISION · UNIT 07</div>
+        <h1 class="logo">DECOMP<span class="logo-mark">.</span></h1>
+        <p class="tagline">The wreck is down there.<br />Your body is the clock.</p>
+        <div class="title-actions">
+          <button class="btn primary big" id="startBtn">BEGIN CONTRACT</button>
+          <button class="btn ghost" id="howBtn">HOW TO PLAY</button>
+        </div>
+        <div class="title-stats">
+          <div><span class="eyebrow">BEST DEPTH</span><span id="titleBest">—</span></div>
+          <div><span class="eyebrow">TOTAL EARNED</span><span id="titleEarned">$0</span></div>
+          <div><span class="eyebrow">CONTRACTS</span><span id="titleContracts">0 / 4</span></div>
+        </div>
+      </div>
+      <div class="title-side">
+        <div class="depth-legend">
+          <div class="legend-title">ASCENT PROTOCOL</div>
+          <div class="legend-row"><span class="legend-swatch safe"></span> HOLD BELOW CEILING</div>
+          <div class="legend-row"><span class="legend-swatch warn"></span> CEILING RISES AS YOU OFF-GAS</div>
+          <div class="legend-row"><span class="legend-swatch danger"></span> CROSSING IT CAUSES BENDS</div>
+        </div>
+      </div>
+      <button class="btn ghost reset-btn hidden" id="resetBtn">RESET PROGRESS</button>
+    </section>
+
+    <!-- ============ HOW TO PLAY ============ -->
+    <section class="screen modal-screen hidden" id="howScreen">
+      <div class="panel how-panel">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">FIELD MANUAL</span>
+            <h2>HOW TO DIVE</h2>
+          </div>
+          <button class="close-btn" data-close="howScreen">✕</button>
+        </div>
+        <div class="how-grid">
+          <div class="how-item">
+            <div class="how-num">01</div>
+            <h3>SWIM &amp; SEARCH</h3>
+            <p>Use <b>WASD</b> / arrows or the touch stick. Deeper salvage pays more. Your lamp only reaches so far.</p>
+          </div>
+          <div class="how-item">
+            <div class="how-num">02</div>
+            <h3>MANAGE AIR</h3>
+            <p>Air burns faster with depth and speed. Grab teal canisters. At 0 you black out.</p>
+          </div>
+          <div class="how-item">
+            <div class="how-num">03</div>
+            <h3>WATCH N₂</h3>
+            <p>Bottom time loads nitrogen. The amber <b>ceiling</b> is the shallowest depth you can safely reach. Hold at it to off-gas.</p>
+          </div>
+          <div class="how-item">
+            <div class="how-num">04</div>
+            <h3>ASCEND SLOW</h3>
+            <p>The ceiling rises as you off-gas. Follow it up. Cross above it and the bends meter fills. Full = dead.</p>
+          </div>
+        </div>
+        <div class="how-foot">
+          <span><span class="key">SPACE</span> boost burns extra air</span>
+          <span><span class="key">ESC</span> pause</span>
+          <span>Touch the wreck's black box on the final contract.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ BRIEFING ============ -->
+    <section class="screen modal-screen hidden" id="briefScreen">
+      <div class="panel brief-panel">
+        <div class="brief-strip">
+          <span id="briefCode">CONTRACT 01 / 04</span>
+          <span class="brief-divider"></span>
+          <span id="briefDivision">SHELF OPERATIONS</span>
+        </div>
+        <h2 id="briefName">KELP SHELF</h2>
+        <p class="brief-desc" id="briefDesc">A research trawler scattered cargo across the kelp shelf. Recover enough to make the fuel bill worth it.</p>
+
+        <div class="brief-stats">
+          <div class="brief-stat"><span class="eyebrow">TARGET DEPTH</span><span id="briefDepth">70 M</span></div>
+          <div class="brief-stat"><span class="eyebrow">SALVAGE QUOTA</span><span id="briefQuota">$700</span></div>
+          <div class="brief-stat"><span class="eyebrow">DIVE BONUS</span><span id="briefBonus">$400</span></div>
+        </div>
+
+        <div class="brief-special hidden" id="briefSpecial">
+          <span class="beacon"></span>
+          <div><span class="eyebrow">PRIORITY OBJECTIVE</span><div>RECOVER THE BLACK BOX FROM THE ABYSSAL WRECK</div></div>
+        </div>
+
+        <div class="gear-row" id="gearRow">
+          <div class="gear-chip"><span class="eyebrow">TANK</span><span id="gearTank">110 AIR</span></div>
+          <div class="gear-chip"><span class="eyebrow">LAMP</span><span id="gearLamp">16 M</span></div>
+          <div class="gear-chip"><span class="eyebrow">FINS</span><span id="gearFins">100%</span></div>
+          <div class="gear-chip"><span class="eyebrow">SUIT</span><span id="gearSuit">N₂ 100%</span></div>
+        </div>
+
+        <div class="brief-actions">
+          <button class="btn primary" id="diveBtn">DIVE</button>
+          <button class="btn ghost" id="briefShopBtn">EQUIPMENT</button>
+          <button class="btn ghost" id="briefBackBtn">BACK</button>
+        </div>
+        <div class="brief-tip" id="briefTip"><span class="key">SPACE</span> to boost · hold at the ceiling to off-gas</div>
+      </div>
+    </section>
+
+    <!-- ============ SHOP ============ -->
+    <section class="screen modal-screen hidden" id="shopScreen">
+      <div class="panel shop-panel">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">DIVE LOCKER</span>
+            <h2>EQUIPMENT</h2>
+          </div>
+          <div class="shop-wallet"><span class="eyebrow">FUNDS</span><span id="shopCash">$0</span></div>
+        </div>
+        <div class="upgrade-grid" id="upgradeGrid"></div>
+        <div class="shop-actions">
+          <button class="btn primary" id="shopNextBtn">CONTINUE</button>
+          <button class="btn ghost" id="shopResetBtn">RESET RUN</button>
+        </div>
+        <p class="shop-note">Gear persists between dives. Cargo only banks when you surface with the quota met.</p>
+      </div>
+    </section>
+
+    <!-- ============ END / RESULT ============ -->
+    <section class="screen modal-screen hidden" id="endScreen">
+      <div class="panel end-panel">
+        <span class="eyebrow" id="endKicker">DIVE COMPLETE</span>
+        <h2 id="endTitle">CONTRACT COMPLETE</h2>
+        <p class="end-sub" id="endSub">Cargo banked. The boat crew hauls you aboard.</p>
+        <div class="end-stats" id="endStats"></div>
+        <div class="end-actions">
+          <button class="btn primary" id="endNextBtn">NEXT</button>
+          <button class="btn ghost" id="endRetryBtn">RETRY DIVE</button>
+          <button class="btn ghost" id="endTitleBtn">TITLE</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PAUSE ============ -->
+    <section class="screen modal-screen hidden" id="pauseScreen">
+      <div class="panel pause-panel">
+        <span class="eyebrow">DIVE PAUSED</span>
+        <h2>HOLDING POSITION</h2>
+        <p class="pause-sub" id="pauseSub">Depth 42 M · 78 AIR · N₂ 21%</p>
+        <div class="pause-actions">
+          <button class="btn primary" id="resumeBtn">RESUME</button>
+          <button class="btn ghost" id="pauseMuteBtn">SOUND: ON</button>
+          <button class="btn ghost" id="restartBtn">RESTART DIVE</button>
+          <button class="btn danger-ghost" id="quitBtn">ABANDON DIVE</button>
+        </div>
+        <p class="pause-warn">Abandoning loses all cargo from this dive.</p>
+      </div>
+    </section>
+
+    <!-- ============ ORIENTATION NUDGE ============ -->
+    <div id="rotateNudge" class="rotate-nudge hidden">
+      <div class="rotate-icon">↻</div>
+      <div>Best played in landscape.<br /><small>Rotate your device for a wider view.</small></div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
